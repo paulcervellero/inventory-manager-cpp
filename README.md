@@ -1,2 +1,1 @@
-# inventory-manager-cpp
-Object-oriented C++ command-line application for managing inventory records. Supports adding, updating, searching, and saving data using CSV file I/O. Designed to demonstrate system design, problem-solving, and data management fundamentals.
+Object-oriented C++ inventory management system with CSV persistence, search, validation, and structured file I/O.
