@@ -1,16 +1,8 @@
 # Inventory Manager
 
-A lightweight command-line inventory management application written in C++17.
+A lightweight command-line inventory management application written in C++17 with CSV persistence, validated CRUD operations, case-insensitive search, and robust file handling.
 
-The application provides persistent inventory storage using CSV files and supports adding, updating, removing, searching, listing, and saving inventory records through an interactive command-line interface.
-
----
-
-## Overview
-
-Inventory Manager was built to practice core C++ programming concepts through a practical data-management application.
-
-Inventory records are stored in memory using the C++ Standard Library and persisted between sessions using a CSV file. The program automatically loads existing inventory data at startup and can save changes during execution or when exiting.
+The project demonstrates core C++ and software development concepts through a practical application for creating, managing, searching, and persistently storing inventory records.
 
 ---
 
@@ -21,11 +13,15 @@ Inventory records are stored in memory using the C++ Standard Library and persis
 - List all inventory records
 - Update existing items by ID
 - Remove items by ID
-- Search items by name
-- Validate numeric user input
+- Case-insensitive search by item name
+- Validate quantities and prices
+- Reject negative quantities and prices
+- Protect against CSV-breaking item names
 - Save inventory data to CSV
-- Load saved inventory automatically at startup
-- Save automatically when exiting with `quit`
+- Automatically load saved inventory at startup
+- Save inventory when exiting
+- Detect file read and write errors
+- Display prices with consistent currency formatting
 
 ---
 
@@ -47,27 +43,31 @@ The corresponding C++ structure is:
 struct Item {
     int id = 0;
     std::string name;
-    int qty = 0;
+    int quantity = 0;
     double price = 0.0;
 };
 ```
 
-Inventory records are stored in memory using a `std::vector<Item>`.
+Inventory records are stored in memory using:
+
+```cpp
+std::vector<Item>
+```
 
 ---
 
 ## Commands
 
-| Command | Function |
+| Command | Description |
 | --- | --- |
 | `list` | Display all inventory items |
 | `add` | Add a new inventory item |
 | `update` | Update an existing item by ID |
 | `remove` | Remove an item by ID |
-| `search` | Search items using a name substring |
+| `search` | Search items by name |
 | `save` | Save the current inventory to disk |
 | `help` | Display available commands |
-| `quit` | Save inventory and exit |
+| `quit` | Save the inventory and exit |
 
 ---
 
@@ -79,7 +79,7 @@ Inventory data is stored locally in:
 inventory.csv
 ```
 
-Each record is stored in the following format:
+Each record uses the following format:
 
 ```text
 id,name,quantity,price
@@ -88,14 +88,15 @@ id,name,quantity,price
 Example:
 
 ```text
-1,Sensor,5,12.5
-2,Cable,10,4.99
-3,Controller,2,39.95
+1,Flight Computer,5,49.99
+2,Sensor Module,10,12.50
 ```
 
-When the application starts, `load_db()` reads the CSV file and reconstructs the inventory in memory.
+When the application starts, the inventory database is loaded into memory.
 
-The `save_db()` function writes the current inventory back to the file.
+When the inventory is saved, the current records are written back to the CSV file.
+
+The application also checks for file read and write failures and reports errors through the command line.
 
 ---
 
@@ -103,26 +104,105 @@ The `save_db()` function writes the current inventory back to the file.
 
 The application is intentionally implemented as a compact single-file C++ program.
 
-Major components include:
-
 ```text
 main()
 │
-├── load_db()
-├── save_db()
+├── Persistence
+│   ├── load_db()
+│   └── save_db()
 │
-├── list_items()
-├── add_item()
-├── update_item()
-├── remove_item()
-├── search_items()
+├── Inventory Operations
+│   ├── list_items()
+│   ├── add_item()
+│   ├── update_item()
+│   ├── remove_item()
+│   └── search_items()
 │
-├── find_item_by_id()
-├── is_number()
-└── print_help()
+├── Utility Functions
+│   ├── find_item_by_id()
+│   ├── parse_int()
+│   ├── parse_double()
+│   ├── to_lower()
+│   └── contains_comma()
+│
+└── CLI
+    └── print_help()
 ```
 
 The main command loop receives user commands and dispatches them to the appropriate inventory operation.
+
+---
+
+## Input Validation
+
+Inventory Manager validates user input before modifying inventory records.
+
+### Quantity
+
+Quantities must be non-negative integers.
+
+Examples:
+
+```text
+5       Valid
+0       Valid
+2.5     Invalid
+-5      Invalid
+```
+
+### Price
+
+Prices must be non-negative numeric values.
+
+Examples:
+
+```text
+49.99   Valid
+0       Valid
+-10     Invalid
+```
+
+### Item Names
+
+Item names:
+
+- Cannot be empty
+- Cannot contain commas
+
+Commas are rejected because the application uses a lightweight CSV storage format.
+
+---
+
+## Search
+
+Inventory Manager supports case-insensitive substring searching.
+
+For example, an inventory item named:
+
+```text
+Flight Computer
+```
+
+can be found using:
+
+```text
+flight
+```
+
+or:
+
+```text
+COMPUTER
+```
+
+---
+
+## Technologies
+
+- C++17
+- C++ Standard Library
+- Git
+- GitHub
 
 ---
 
@@ -130,18 +210,20 @@ The main command loop receives user commands and dispatches them to the appropri
 
 This project demonstrates:
 
-- C++17
-- Structures
+- C++ structures
 - `std::vector`
+- Standard Library algorithms
+- Lambda expressions
 - File streams
 - CSV parsing
 - String streams
-- Standard Library algorithms
-- Lambda expressions
 - Exception handling
 - Input validation
-- Dynamic record management
-- Command-line interface design
+- Case-insensitive string processing
+- Command-line interfaces
+- Persistent data storage
+- CRUD-style operations
+- Error handling
 
 ---
 
@@ -154,10 +236,10 @@ A C++17-compatible compiler such as:
 - GCC
 - Clang
 
-Compile using:
+Compile with warnings enabled:
 
 ```bash
-g++ -std=c++17 main.cpp -o inventory
+g++ -std=c++17 -Wall -Wextra -pedantic main.cpp -o inventory
 ```
 
 Run on macOS or Linux:
@@ -174,31 +256,41 @@ inventory.exe
 
 ---
 
-## Example
+## Example Usage
 
 ```text
 Inventory Manager
 Type 'help' for commands.
 
 > add
-Enter name: Sensor
-Enter quantity: 5
-Enter price: 12.50
-Added item id 1.
+Enter name: Flight Computer
+Enter quantity: 3
+Enter price: 49.99
+Added item ID 1.
 
 > list
-ID      Name            Qty     Price
-----------------------------------------
-1       Sensor          5       12.5
+ID    Name                           Qty       Price
+----------------------------------------------------
+1     Flight Computer                  3       49.99
+
+> update
+Enter item ID to update: 1
+Current name: Flight Computer
+New name (leave blank to keep):
+Current quantity: 3
+New quantity (leave blank to keep): 5
+Current price: 49.99
+New price (leave blank to keep):
+Item updated.
 
 > search
-Enter search term (name substring): Sensor
-ID      Name    Qty     Price
---------------------------------
-1       Sensor  5       12.5
+Enter search term: flight
+ID    Name                           Qty       Price
+----------------------------------------------------
+1     Flight Computer                  5       49.99
 
 > save
-Saved.
+Inventory saved.
 
 > quit
 Goodbye.
@@ -206,34 +298,73 @@ Goodbye.
 
 ---
 
-## Limitations and Future Improvements
+## Verification
 
-The current implementation intentionally keeps the application lightweight. Potential improvements include:
+The application has been compiled using:
 
+```bash
+g++ -std=c++17 -Wall -Wextra -pedantic main.cpp -o inventory
+```
+
+with no compiler warnings or errors.
+
+Core functionality has been manually verified for:
+
+- Adding inventory records
+- Listing records
+- Updating records
+- Removing records
 - Case-insensitive searching
-- Improved CSV parsing and escaping
-- Validation preventing negative quantities and prices
+- Integer validation
+- Negative-value rejection
+- CSV name validation
+- Saving data
+- Loading persisted data after restart
+
+---
+
+## Project Structure
+
+```text
+inventory-manager-cpp/
+├── .gitignore
+├── LICENSE
+├── main.cpp
+└── README.md
+```
+
+The compiled executable and local `inventory.csv` database are excluded from version control.
+
+---
+
+## Future Improvements
+
+Potential extensions include:
+
+- Automated unit tests
+- Full CSV escaping and quoted-field support
 - Sorting and filtering
-- Unit tests
-- Improved table formatting
-- Separation of inventory and persistence logic into classes
-- Multiple inventory files
-- More robust error handling
+- Multiple inventory databases
+- Import/export functionality
+- Separation of inventory and persistence logic into dedicated classes
+- More advanced command-line argument handling
 
 ---
 
 ## What I Learned
 
-This project strengthened my understanding of:
+Building and improving this project strengthened my understanding of:
 
-- Building interactive C++ command-line programs
-- Managing collections with the C++ Standard Library
+- Designing interactive C++ command-line applications
+- Working with Standard Library containers and algorithms
+- Parsing and validating user input
 - Reading and writing persistent data
-- Parsing structured text files
-- Validating user input
-- Implementing create, read, update, delete, and search operations
-- Using Standard Library algorithms and containers
-- Structuring a small application into focused functions
+- Handling malformed input safely
+- Implementing CRUD-style operations
+- Designing case-insensitive search
+- Handling file-system errors
+- Compiling C++ with strict warning flags
+- Testing application behavior across program restarts
 
 ---
 
