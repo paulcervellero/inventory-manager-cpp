@@ -1,0 +1,15 @@
+cat > .gitignore << 'EOF'
+# Compiled binaries
+inventory
+*.o
+*.out
+
+# Runtime data
+inventory.csv
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+EOF
